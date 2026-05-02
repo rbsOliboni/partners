@@ -2,3 +2,101 @@
 CHANGELOG v2.0.1 (Build sobre v2.0.0):
 ✅ Ajuste concluído
 Agora, ao clicar em um arquivo já selecionado sem Ctrl/Shift, ele será desmarcado.
+
+teste
+
+const std::string& CEterPack::GetPathName()
+{
+	return m_stPathName;
+}
+
+bool CEterPack::Create(CEterFileDict& rkFileDict, const char * dbname, const char* pathName, bool bReadOnly, const BYTE* iv)
+{
+	if (iv)
+	{
+		m_stIV_Panama.assign((const char*) iv, 32);
+		m_bDecrypedIV = false;
+	}
+
+	m_stPathName = pathName;
+
+	strncpy(m_dbName, dbname, DBNAME_MAX_LEN);
+
+	strncpy(m_indexFileName, dbname, MAX_PATH);
+#ifdef ENABLE_PACK_MERGE
+	strcat(m_indexFileName, OUT_EXT);
+#else
+	strcat(m_indexFileName, ".atr");
+#endif
+
+	m_stDataFileName = dbname;
+#ifdef ENABLE_PACK_MERGE
+	m_stDataFileName += OUT_EXT;
+#else
+	m_stDataFileName += ".mde";
+#endif
+
+	m_bReadOnly = bReadOnly;
+
+	// bReadOnly 모드가 아니고 데이터 베이스가 열린다면 생성 실패
+	if (!CreateIndexFile())
+		return false;
+
+	if (!CreateDataFile())
+		return false;
+
+	bool bOverwrite = (iv != NULL);
+	__BuildIndex(rkFileDict, bOverwrite);
+
+	if (m_bReadOnly)
+	{
+		//m_bIsDataLoaded = true;
+		//if (!m_file.Create(m_stDataFileName.c_str(), (const void**)&m_file_data, 0, 0))
+		//	return false;
+	}
+	else
+	{
+		DecryptIndexFile();
+	}
+
+	return true;
+}
+
+bool CEterPack::DecryptIV(DWORD dwPanamaKey)
+{
+	if (m_stIV_Panama.length() != 32)
+		return false;
+
+	if (m_bDecrypedIV) // 이미 암호화가 풀렸으면 다시 처리 안함
+		return true;
+
+	DWORD* ivs = (DWORD*)&m_stIV_Panama[0];
+	for (int i = 0; i != m_stIV_Panama.length() / sizeof(DWORD); ++i)
+	{
+		ivs[i] ^= dwPanamaKey + i * 16777619;
+	}
+
+	m_bDecrypedIV = true;
+	return true;
+}
+
+bool CEterPack::DecryptIndexFile()
+{
+	if (!m_bEncrypted)
+		return true;
+
+	CFileBase file;
+
+	if (!file.Create(m_indexFileName, CFileBase::FILEMODE_WRITE))
+		return false;
+
+	file.Write(&eterpack::c_IndexCC, sizeof(DWORD));
+	file.Write(&eterpack::c_Version, sizeof(DWORD));
+	file.Write(&m_indexCount, sizeof(long));
+	file.Write(m_indexData, sizeof(TEterPackIndex) * m_indexCount);
+
+	file.Close();
+
+	m_bEncrypted = false;
+	return true;
+}
