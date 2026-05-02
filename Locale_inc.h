@@ -2,4 +2,4 @@
 /*******************************************************************/
 // add
 
-#define ENABLE_INDEX_AT_SOURCE				// Ativa Index na Fonte
+#define ENABLE_INDEX_AT_SOURCE				// Active Index at Source
