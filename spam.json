@@ -1,9 +1,5 @@
 [
   {
-    "hwid": "f4e07595b7381b14f333cf80862adef7d1283f3d6cb4e0e62c630db77227e08e",
-    "reason": "Bloqueio por uso indevido do sistema"
-  },
-  {
     "hwid": "11223344556677889900aabbccddeeff",
     "reason": "Tentativa de acesso com licença inválida"
   }
